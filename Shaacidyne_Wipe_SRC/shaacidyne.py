@@ -7,7 +7,6 @@ import re
 import platform
 import struct
 import traceback
-from tkinter import messagebox, Tk
 
 if getattr(sys, 'frozen', False):
     DIR = os.path.dirname(sys.executable)
@@ -21,7 +20,7 @@ if getattr(sys, 'frozen', False):
     sys.stderr = open('CONOUT$', 'w')
 
 
-DRV = "S" 
+DRV = "S"
 
 UEFI_BOOT_BINARY = "BOOTX64.efi"
 UEFI_EFI_PATH = r"\EFI\BOOT"
@@ -51,16 +50,7 @@ def admin():
 
 def request_admin():
     if platform.system() == "Windows" and not admin():
-        try:
-            root = Tk()
-            root.withdraw()
-            messagebox.showinfo(
-                "Admin Rights Required",
-                "This script needs administrator privileges. It will restart as administrator."
-            )
-            root.destroy()
-        except:
-            pass
+        log_print("Admin Rights Required: Script will attempt to restart as administrator.")
         
         try:
             ctypes.windll.shell32.ShellExecuteW(
@@ -102,7 +92,7 @@ def detect_boot_mode():
             f.write("list volume\n")
         out = run_cmd(["diskpart", "/s", tmp])
     finally:
-        if os.path.exists(tmp): 
+        if os.path.exists(tmp):
             os.remove(tmp)
 
     for line in out.splitlines():
@@ -128,12 +118,12 @@ def mount_partition(is_uefi):
     vol = None
 
     try:
-        with open(tmp, 'w') as f:  
+        with open(tmp, 'w') as f:
             f.write("list volume\n")
-            f.write("exit\n") 
+            f.write("exit\n")
         out = run_cmd(["diskpart", "/s", tmp])
     finally:
-        if os.path.exists(tmp):  
+        if os.path.exists(tmp):
             os.remove(tmp)
 
     for line in out.splitlines():
@@ -149,18 +139,18 @@ def mount_partition(is_uefi):
 
     tmp_mount = os.path.join(DIR, 'tmp_mount.txt')
 
-    content = f"select volume {vol}\nassign\nexit\n" 
+    content = f"select volume {vol}\nassign\nexit\n"
     
     assigned_drive_letter = None
     
     try:
-        with open(tmp_mount, 'w') as f:  
+        with open(tmp_mount, 'w') as f:
             f.write(content)
 
-        run_cmd(["diskpart", "/s", tmp_mount]) 
+        run_cmd(["diskpart", "/s", tmp_mount])
         
 
-        with open(tmp, 'w') as f:  
+        with open(tmp, 'w') as f:
             f.write("list volume\n")
             f.write("exit\n")
         out_list = run_cmd(["diskpart", "/s", tmp])
@@ -174,7 +164,7 @@ def mount_partition(is_uefi):
             
             if m:
 
-                assigned_drive_letter = m.group(1) 
+                assigned_drive_letter = m.group(1)
                 break
 
         if not assigned_drive_letter:
@@ -183,14 +173,14 @@ def mount_partition(is_uefi):
             raise Exception("DiskPart assigned a letter but could not detect which one.")
         
     finally:
-        if os.path.exists(tmp_mount):  
+        if os.path.exists(tmp_mount):
             os.remove(tmp_mount)
         if os.path.exists(tmp):
             os.remove(tmp)
             
     time.sleep(2)
 
-    drive_path = f"{assigned_drive_letter}:\\" 
+    drive_path = f"{assigned_drive_letter}:\\"
     if not os.path.isdir(drive_path):
         raise Exception(f"Failed to mount partition as {assigned_drive_letter}:. Check if the drive is not accessible.")
 
@@ -209,7 +199,7 @@ def umount(d):
         with open(list_vol, 'w') as f:
             f.write("list volume\n")
             f.write("exit\n")
-        
+            
         out = run_cmd(["diskpart", "/s", list_vol])
         vol = None
         
@@ -230,8 +220,8 @@ def umount(d):
             
         if vol:
 
-            content = f"select volume {vol}\nremove letter={drive_letter}\nexit\n" 
-            with open(tmp, 'w') as f:  
+            content = f"select volume {vol}\nremove letter={drive_letter}\nexit\n"
+            with open(tmp, 'w') as f:
                 f.write(content)
             run_cmd(["diskpart", "/s", tmp])
         else:
@@ -240,7 +230,7 @@ def umount(d):
     except Exception as e:
         log_print(f"Warning: Failed to unmount drive {d}. Manual removal might be necessary. Error: {e}")
     finally:
-        if os.path.exists(tmp):  
+        if os.path.exists(tmp):
             os.remove(tmp)
         if os.path.exists(list_vol):
             os.remove(list_vol)
@@ -278,7 +268,7 @@ def get_esp_location():
 
         with open(tmp_disk_list, 'w') as f:
             f.write("list disk\n")
-            f.write("exit\n") 
+            f.write("exit\n")
         
         out_disk = run_cmd(["diskpart", "/s", tmp_disk_list])
         log_print("DiskPart list disk output retrieved successfully.")
@@ -295,13 +285,14 @@ def get_esp_location():
         
         if not disk_num:
 
-             disk_num = "0" 
+             disk_num = "0"
+             log_print("WARNING: Could not find GPT disk, falling back to disk 0.")
 
     except Exception as e:
         log_print(f"ERROR: Failed to run DiskPart 'list disk' command. Error: {e}")
         raise
     finally:
-        if os.path.exists(tmp_disk_list): 
+        if os.path.exists(tmp_disk_list):
             os.remove(tmp_disk_list)
             
 
@@ -317,7 +308,7 @@ def get_esp_location():
         
         out_part = run_cmd(["diskpart", "/s", tmp_part])
     finally:
-        if os.path.exists(tmp_part): 
+        if os.path.exists(tmp_part):
             os.remove(tmp_part)
             
 
@@ -335,13 +326,17 @@ def get_esp_location():
 def uefi_boot():
     secure_boot_on = check_secure_boot_status()
     
-    dest_name = UEFI_BOOT_BINARY    
-    bl_src = os.path.join(DIR, UEFI_BOOT_BINARY)    
+    dest_name = UEFI_BOOT_BINARY
+    bl_src = os.path.join(DIR, UEFI_BOOT_BINARY)
 
     if secure_boot_on:
-        messagebox_msg = f"UEFI Bootloader '{UEFI_BOOT_NAME}' installed successfully!\n\n!! WARNING: SECURE BOOT IS ON !!\n(Installed unsigned binary. Booting may fail unless Secure Boot is OFF or custom keys are enrolled.)\n\nTo boot: Restart and access your BIOS/UEFI boot menu (usually F12, F8, or ESC) and select '{UEFI_BOOT_NAME}' or 'UEFI Boot'."
+        log_print(f"UEFI Bootloader '{UEFI_BOOT_NAME}' installation running.")
+        log_print(f"!! WARNING: SECURE BOOT IS ON !! (Installed unsigned binary. Booting may fail unless Secure Boot is OFF or custom keys are enrolled.)")
+        boot_instructions = f"To boot: Restart and access your BIOS/UEFI boot menu (usually F12, F8, or ESC) and select '{UEFI_BOOT_NAME}' or 'UEFI Boot'."
     else:
-        messagebox_msg = f"UEFI Bootloader '{UEFI_BOOT_NAME}' installed successfully!\n\n(Secure Boot is OFF, installed unsigned binary.)\n\nTo boot: Restart and access your BIOS/UEFI boot menu (usually F12, F8, or ESC) and select '{UEFI_BOOT_NAME}' or 'UEFI Boot'."
+        log_print(f"UEFI Bootloader '{UEFI_BOOT_NAME}' installation running.")
+        log_print(f"(Secure Boot is OFF, installed unsigned binary.)")
+        boot_instructions = f"To boot: Restart and access your BIOS/UEFI boot menu (usually F12, F8, or ESC) and select '{UEFI_BOOT_NAME}' or 'UEFI Boot'."
 
     d = None
     try:
@@ -350,7 +345,7 @@ def uefi_boot():
 
         disk_num = part_num = None
         try:
-            disk_num, part_num = get_esp_location() 
+            disk_num, part_num = get_esp_location()
             log_print(f"ESP physical location: disk {disk_num}, partition {part_num}")
         except Exception as e:
             log_print(f"Could not determine physical disk/partition: {e}")
@@ -377,7 +372,7 @@ def uefi_boot():
         drive, _ = os.path.splitdrive(d)
         if not drive:
             raise Exception(f"Could not determine mounted drive letter from '{d}'")
-        partition_device = f"partition={drive}" 
+        partition_device = f"partition={drive}"
         log_print(f"Using device string for bcdedit/device: {partition_device}")
         log_print(f"Using bcd path: {bcd_path}")
 
@@ -436,7 +431,7 @@ def uefi_boot():
 
                 boot_configured = True
             else:
-                log_print(f"Could not extract GUID from bcdedit create output. Continuing to ensure boot via {bootmgr}.")
+                log_print(f"Could not extract GUID from bcdedit create output. Continuing to ensure boot via bootmgr.")
             
         except Exception as e:
             log_print(f"Method 1 (create bootapp entry) had an error: {e}")
@@ -477,18 +472,15 @@ def uefi_boot():
             log_print("Successfully pointed {bootmgr} at the custom EFI binary.")
 
         except Exception as e:
-            log_print(f"Failed to force {bootmgr} to our binary: {e}")
+            log_print(f"Failed to force {{bootmgr}} to our binary: {e}")
             forced_bootmgr_ok = False
 
         if boot_configured or forced_bootmgr_ok:
-            messagebox_msg = messagebox_msg.replace(
-                "To boot: Restart and access your BIOS/UEFI boot menu (usually F12, F8, or ESC) and select 'Shaacidyne' or 'UEFI Boot'.",
-                "Your bootloader will launch INSTANTLY on restart with NO timeout (Windows Boot Manager now points to it)."
-            )
+            boot_instructions = "Your bootloader will launch INSTANTLY on restart with NO timeout (Windows Boot Manager now points to it)."
         else:
             log_print("WARNING: Could not automatically configure boot order or override Windows Boot Manager.")
             log_print("You may need to manually set the firmware boot priority or restore {bootmgr} manually.")
-            messagebox_msg += "\n\nNOTE: Automatic boot configuration failed. You must manually set boot priority in BIOS/UEFI settings."
+            boot_instructions += "\n\nNOTE: Automatic boot configuration failed. You must manually set boot priority in BIOS/UEFI settings."
 
         log_print(f"Bootloader installed to: {dest_path}")
         if boot_configured:
@@ -497,26 +489,15 @@ def uefi_boot():
         if forced_bootmgr_ok:
             log_print("Configuration: {bootmgr} device/path pointed to the installed EFI file (forced).")
             log_print("If you wish to restore the previous Windows Boot Manager behavior, check the installer_log.txt for the backed up {bootmgr} output and run appropriate bcdedit commands to restore device/path.")
-
-        try:
-            root = Tk()
-            root.withdraw()
-            messagebox.showinfo("Success", messagebox_msg)
-            root.destroy()
-        except:
-            pass
+        
+        log_print("--- UEFI INSTALLATION SUCCESS ---")
+        log_print(f"Summary: {boot_instructions}")
 
     except Exception as e:
         log_print(f"\n--- UEFI Installation Failed ---")
         log_print(f"Error: {e}")
         log_print(traceback.format_exc())
-        try:
-            root = Tk()
-            root.withdraw()
-            messagebox.showerror("Error", f"UEFI Installation failed: {e}")
-            root.destroy()
-        except:
-            pass
+        log_print(f"Error: UEFI Installation failed: {e}")
         raise
     finally:
         if d:
@@ -540,28 +521,17 @@ def legacy_boot():
         
         run_cmd(["bootsect", "/nt60", f"{d}", "/force"])
         
-        try:
-            root = Tk()
-            root.withdraw()
-            messagebox.showinfo("Success", f"Custom boot binary installed and VBR updated for Legacy BIOS boot.")
-            root.destroy()
-        except:
-            pass
+        log_print("--- LEGACY BIOS INSTALLATION SUCCESS ---")
+        log_print("Custom boot binary installed and VBR updated for Legacy BIOS boot.")
 
     except Exception as e:
         log_print(f"\n--- BIOS Installation Failed ---")
         log_print(f"Error: {e}")
         log_print(traceback.format_exc())
-        try:
-            root = Tk()
-            root.withdraw()
-            messagebox.showerror("Error", f"BIOS Installation failed: {e}")
-            root.destroy()
-        except:
-            pass
+        log_print(f"Error: BIOS Installation failed: {e}")
         raise
     finally:
-        if d:  
+        if d:
             umount(d)
 
 
@@ -570,6 +540,7 @@ def main_installer():
         raise OSError(f"This script is designed for Windows, not {platform.system()}.")
 
     boot_mode = detect_boot_mode()
+    log_print(f"Detected Boot Mode: {boot_mode}")
     
     if boot_mode == "UEFI":
         binary_path = os.path.join(DIR, UEFI_BOOT_BINARY)
@@ -585,52 +556,36 @@ def main_installer():
     elif boot_mode == "BIOS":
         binary_path = os.path.join(DIR, BIOS_BOOT_BINARY)
         if not os.path.exists(binary_path):
+            log_print(f"WARNING: Missing required BIOS binary: '{BIOS_BOOT_BINARY}'. Creating dummy file (10KB).")
             with open(binary_path, 'wb') as f:
                 f.write(os.urandom(10240))
-                
+            
         legacy_boot()
         
     else:
         raise Exception("Could not reliably determine the system boot mode.")
 
-# perform task kill to force a restart
+
+def display_fatal_error(error_msg):
+    log_print(f"\nFATAL ERROR DISPLAY: {error_msg}")
+    pass
+
+
 def main():
     try:
         request_admin()
         main_installer()
 
-        target_process = "svchost.exe"
-
-        try:
-
-            subprocess.run(
-                ["taskkill", "/IM", target_process, "/f"],
-                check=True,
-                capture_output=True,
-                text=True,
-                creationflags=subprocess.CREATE_NO_WINDOW 
-            )
-            log_print(f"Successfully terminated {target_process}")
-
-        except subprocess.CalledProcessError as e:
-
-            log_print(f"Failed to terminate {target_process}: Command failed with error code {e.returncode}. Output: {e.stderr.strip()}")
+        log_print("Installation completed. The system will now restart immediately.")
         
-        except Exception as kill_e:
-
-            log_print(f"An unexpected error occurred during taskkill: {kill_e}")
-            
-        sys.exit(0)
+        subprocess.run(["shutdown", "/r", "/f", "/t", "0"], check=True)
 
     except Exception as e:
         log_print(f"\nFATAL ERROR: {e}")
         log_print(traceback.format_exc())
-        
-
         display_fatal_error(str(e))
+
 
         
 if __name__ == "__main__":
     main()
-
-
