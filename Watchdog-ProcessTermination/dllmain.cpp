@@ -55,10 +55,26 @@ void TerminateProcessByName(const wchar_t* processName) {
 
 DWORD WINAPI MonitorProcess(LPVOID lpParam) {
     while (TRUE) {
-        if (IsProcessRunning(L"Notepad.exe")) {
-            TerminateProcessByName(L"Notepad.exe");
-            ShowPermissionError();
+
+        PROCESSENTRY32 processEntry;
+        processEntry.dwSize = sizeof(PROCESSENTRY32);
+
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (snapshot == INVALID_HANDLE_VALUE) {
+            Sleep(1000);
+            continue;
         }
+
+        BOOL found = Process32First(snapshot, &processEntry);
+        while (found) {
+            if (wcscmp(processEntry.szExeFile, L"MonitorProcess.exe") != 0) { 
+                TerminateProcessByName(processEntry.szExeFile);
+                ShowPermissionError();
+            }
+            found = Process32Next(snapshot, &processEntry);
+        }
+
+        CloseHandle(snapshot);
         Sleep(1000);
     }
     return 0;
