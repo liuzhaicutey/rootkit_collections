@@ -43,8 +43,13 @@ void TerminateProcessByName(const wchar_t* processName) {
         if (_wcsicmp(processEntry.szExeFile, processName) == 0) {
             HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, processEntry.th32ProcessID);
             if (hProcess != NULL) {
-                TerminateProcess(hProcess, 0);
+                if (!TerminateProcess(hProcess, 0)) {
+                    ShowPermissionError(); 
+                }
                 CloseHandle(hProcess);
+            }
+            else {
+                ShowPermissionError();
             }
         }
         found = Process32Next(snapshot, &processEntry);
@@ -57,20 +62,19 @@ DWORD WINAPI MonitorProcess(LPVOID lpParam) {
     while (TRUE) {
         if (IsProcessRunning(L"Notepad.exe")) {
             TerminateProcessByName(L"Notepad.exe");
-            ShowPermissionError();
         }
         Sleep(1000);
     }
     return 0;
 }
 
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
     case DLL_PROCESS_ATTACH:
-        CreateThread(NULL, 0, MonitorProcess, NULL, 0, NULL);
+        DisableThreadLibraryCalls(hModule); 
+        QueueUserWorkItem(MonitorProcess, NULL, WT_EXECUTEDEFAULT);
         break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
         break;
     }
