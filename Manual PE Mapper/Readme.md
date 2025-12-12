@@ -1,7 +1,7 @@
 # Manual PE Mapper
 
-A **Custom In-Memory PE File Loader**, or assembler utility designed to manually map a running Windows executable or Dynamic Link Library (DLL) into a **new, clean block of memory** within the current process and prepare it for execution.
-A classic technique for **reflective DLL injection**, **packing/unpacking**, and building custom **anti-debugging** mechanisms.
+A **Custom In-Memory PE File Loader**, or assembler utility DLL designed to manually map a running Windows executable into a **new, clean block of memory** within the current process and prepare it for execution.
+A classic technique for **reflective DLL injection**, **packing/unpacking**, and building custom **anti-debugging** mechanisms. Load directly to your application or inject using custom injectors.
 
 ---
 
