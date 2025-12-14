@@ -1,6 +1,6 @@
 # Manual PE Mapper
 
-A **custom in-memory PE file loader**, this utility is designed to map a **PE/DLL** file into memory, modify the necessary data structures, and prepare it for execution. This technique is commonly used in scenarios such as **reflective DLL injection**, **packing and unpacking executables**, **obfuscation**, and **custom anti-debugging** mechanisms. You can use it to directly load a PE file into your application or inject it into a target process.
+A **custom in-memory PE file loader**, this utility is designed to map a **PE/DLL** file into memory, modify the necessary data structures, and prepare it for execution. This technique is commonly used in scenarios such as **reflective DLL injection**, **packing and unpacking executables**, **obfuscation**, and **custom anti-debugging** mechanisms.
 
 ---
 
@@ -27,7 +27,7 @@ The code follows four key stages to load and execute a PE file in memory:
 
 ---
 
-## How to use
+## How to build
 **On VS**
 - **Add payload to your project**: Right-click the project and add resource. Import your DLL/EXE and set its type to `RCDATA`
 - **Set ID**: Set resource ID to 101 on the Resource View window
@@ -36,6 +36,8 @@ The code follows four key stages to load and execute a PE file in memory:
    └── resource.rc
        └── RCDATA
            └── IDR_CUSTOM1  <-- rename to 101 then **compile**
+**Deploy using injectors and inject the DLL into a target process or use your application to load the DLL and execute it**
+  
 ---
 
 ## DISCLAIMER
