@@ -27,12 +27,16 @@ The code follows four key stages to load and execute a PE file in memory:
 
 ---
 
-## Important Considerations
-
-- **ASLR (Address Space Layout Randomization):** If the PE file is being relocated due to ASLR, make sure to account for this when mapping the image and fixing relocations.
-- **Error Handling:** The code assumes that operations like `VirtualAlloc`, `memcpy`, and `VirtualProtect` succeed. You should implement robust error handling to ensure the program handles failure cases gracefully.
-- **TLS Callbacks:** The `ExecuteTLSCallbacks` function is responsible for running any initialization code defined in the TLS section of the PE file. These are crucial for DLLs but may not be used in all PE files.
-- **Import Address Table (IAT):** Be sure to resolve all dynamic imports correctly, including **delayed imports**, which may require special handling.
+## How to use
+**On VS**
+- **Add paylod to your project**: Right-click the project and add resource. Import your DLL/EXE and set its type to `RCDATA`
+- **Set ID**: Set resource ID to 101 on the Resource View window
+- **EXAMPLE**:
+- Resource Files
+   └── resource.rc
+       └── RCDATA
+           └── IDR_CUSTOM1  <-- rename to 101
+-**Compile**.
 
 ---
 
