@@ -4,3 +4,7 @@ This is a System API response interceptor (Improved version of my previous NTQue
 ## Limitations:
 - Process managers using kernel drivers as tested (ProcessHacker, System Informer) will bypass userland hooks entirely.
 - This only covers NtQuerySystemInformation while other processes can use Process32First/Next, EnumProcesses, WTSEnumerateProcesses, etc.
+- For production use, consider kernel-mode solutions or legitimate alternatives.
+
+## Disclaimer:
+For Educational Purposes Only. Unauthorized use of this technique against systems you do not own is illegal and unethical.
